@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveClean - Удаление метаданных из фотографий</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- EXIF.js for reading metadata -->
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <!-- piexifjs for selective metadata removal -->
+    <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.min.js"></script>
+    <!-- HEIC to JPEG converter - using latest version -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <!-- JSZip for multiple files download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="card">
+            <header class="header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Shield background gradient -->
+                            <defs>
+                                <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#2E8BC0;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#5DC862;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Shield -->
+                            <path d="M50 10 L20 25 L20 50 Q20 75 50 90 Q80 75 80 50 L80 25 Z" fill="url(#shieldGradient)" opacity="0.9"/>
+                            <!-- Cloud -->
+                            <ellipse cx="35" cy="40" rx="8" ry="6" fill="white" opacity="0.9"/>
+                            <ellipse cx="42" cy="38" rx="7" ry="7" fill="white" opacity="0.9"/>
+                            <ellipse cx="48" cy="40" rx="6" ry="5" fill="white" opacity="0.9"/>
+                            <!-- Hard drive -->
+                            <rect x="38" y="42" width="18" height="14" rx="2" fill="white" stroke="#2E8BC0" stroke-width="1.5"/>
+                            <circle cx="44" cy="49" r="4" fill="none" stroke="#2E8BC0" stroke-width="1.5"/>
+                            <line x1="44" y1="49" x2="47" y2="52" stroke="#2E8BC0" stroke-width="1.5"/>
+                            <line x1="40" y1="44" x2="52" y2="44" stroke="#2E8BC0" stroke-width="1"/>
+                            <!-- Broom -->
+                            <line x1="58" y1="38" x2="68" y2="48" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                            <path d="M67 48 L65 54 Q63 58 60 58 Q57 58 55 54 L53 48" fill="#5DC862" stroke="white" stroke-width="1"/>
+                            <!-- Sparkles -->
+                            <circle cx="46" cy="62" r="1.5" fill="#5DC862" opacity="0.8"/>
+                            <circle cx="52" cy="65" r="1" fill="#5DC862" opacity="0.6"/>
+                            <circle cx="42" cy="66" r="1" fill="#2E8BC0" opacity="0.7"/>
+                            <circle cx="48" cy="68" r="1.2" fill="#5DC862" opacity="0.7"/>
+                        </svg>
+                    </div>
+                    <span class="logo-text">DriveClean</span>
+                </div>
+                <nav class="nav-menu">
+                    <a href="index.html" class="active">Главная</a>
+                    <a href="how-it-works.html">Как это работает?</a>
+                    <a href="social.html">Социальные сети</a>
+                </nav>
+                <button class="btn-login" onclick="window.location.href='register.html'">Регистрация</button>
+            </header>
+            <main class="content">
+                <h1 class="main-title">
+                    Ваши фотографии хранят слишком много.<br>Удалите метаданные
+                </h1>
+                <p class="subtitle">
+                    Удалите скрытые метаданные (GPS, серийный номер, историю редактирования) одним щелчком
+                </p>
+                <div class="upload-zone">
+                    <div class="icon-broom">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 4L12 12"></path>
+                            <path d="M10 14L4 20C4 20 6 22 8 22C10 22 12 20 12 20L18 14"></path>
+                            <path d="M16 8L16.01 8"></path>
+                            <path d="M13 11L13.01 11"></path>
+                        </svg>
+                        <div class="particles"></div>
+                    </div>
+                    <p class="upload-text">
+                        Перетащите сюда файлы или <a href="#" class="upload-link">выберите на вашем компьютере</a>
+                    </p>
+                    <p class="upload-formats">Поддерживаются: JPG, PNG, WEBP, HEIC, HEIF, BMP, GIF</p>
+                    <p class="upload-note">💡 HEIC файлы автоматически конвертируются в JPEG</p>
+                    <input type="file" id="fileInput" multiple accept="image/*,.heic,.heif" style="display: none;">
+                </div>
+
+                <!-- Кнопка режима -->
+                <div class="mode-switch">
+                    <button class="mode-btn active" data-mode="simple" id="simpleModeBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        </svg>
+                        Быстрая очистка
+                    </button>
+                    <button class="mode-btn" data-mode="advanced" id="advancedModeBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"></path>
+                        </svg>
+                        Просмотр метаданных
+                    </button>
+                </div>
+
+                <!-- Просмотр метаданных (для одного файла) -->
+                <div id="metadataViewer" class="metadata-viewer-main" style="display: none;">
+                    <div class="metadata-viewer-header">
+                        <div class="metadata-file-info">
+                            <h3 class="metadata-filename-main" id="currentFileNameMain"></h3>
+                            <p class="metadata-filesize-main" id="currentFileSizeMain"></p>
+                        </div>
+                        <button class="btn-back" onclick="backToUpload()">← Назад</button>
+                    </div>
+
+                    <div class="metadata-viewer-content">
+                        <div class="metadata-viewer-sidebar">
+                            <div class="metadata-actions-top">
+                                <button class="btn-select-all-main" id="selectAllBtnMain">Выбрать все</button>
+                                <button class="btn-deselect-all-main" id="deselectAllBtnMain">Снять все</button>
+                            </div>
+                            <div id="metadataCategoriesMain" class="metadata-categories-main"></div>
+                        </div>
+                        <div class="metadata-viewer-details">
+                            <div id="metadataListMain" class="metadata-list-main"></div>
+                        </div>
+                    </div>
+
+                    <div class="metadata-viewer-footer">
+                        <div class="metadata-summary-main">
+                            <span id="selectedCountMain">0</span> метаданных выбрано для удаления
+                            <div class="metadata-info-text">💡 Используется библиотека piexifjs для выборочного удаления</div>
+                        </div>
+                        <button class="btn-clean-main" id="cleanBtnMain">Удалить выбранные и скачать</button>
+                    </div>
+                </div>
+                
+                <!-- Прогресс обработки -->
+                <div id="processingSection" class="processing-section" style="display: none;">
+                    <div class="processing-header">
+                        <h3 class="processing-title">Обработка файлов...</h3>
+                        <div class="processing-stats">
+                            <span id="processedCount">0</span> / <span id="totalCount">0</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <!-- Результаты -->
+                <div id="resultsSection" class="results-section" style="display: none;">
+                    <div class="results-header">
+                        <h3 class="results-title">Готово! ✨</h3>
+                        <div class="results-actions">
+                            <button class="btn-download-all" id="downloadAllBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Скачать все (ZIP)
+                            </button>
+                            <button class="btn-clear" id="clearBtn">Очистить</button>
+                        </div>
+                    </div>
+                    <div id="resultsList" class="results-list"></div>
+                </div>
+                
+                <div class="security-info">
+                    <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>Все файлы обрабатываются локально и удаляются сразу после очистки</span>
+                </div>
+            </main>
+        </div>
+        <div class="footer-timestamp">
+            © 2025 DriveClean
+        </div>
+    </div>
+
+    <script src="database.js"></script>
+    <script src="exif-reader.js"></script>
+    <script src="exif-remover.js"></script>
+    <script src="selective-exif-remover.js"></script>
+    <script>
+        // Инициализация
+        const exifRemover = new ExifRemover();
+        const exifReader = new ExifReader();
+        const selectiveRemover = new SelectiveExifRemover();
+        let processedResults = [];
+        let currentMode = 'simple'; // simple или advanced
+        let currentFile = null;
+        let currentMetadata = null;
+        let selectedMetadata = new Set();
+
+        // Элементы интерфейса
+        const uploadZone = document.querySelector('.upload-zone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadLink = document.querySelector('.upload-link');
+        const metadataViewer = document.getElementById('metadataViewer');
+        const processingSection = document.getElementById('processingSection');
+        const resultsSection = document.getElementById('resultsSection');
+
+        // Переключение режимов
+        document.getElementById('simpleModeBtn').addEventListener('click', () => {
+            currentMode = 'simple';
+            document.getElementById('simpleModeBtn').classList.add('active');
+            document.getElementById('advancedModeBtn').classList.remove('active');
+            fileInput.multiple = true;
+        });
+
+        document.getElementById('advancedModeBtn').addEventListener('click', () => {
+            currentMode = 'advanced';
+            document.getElementById('advancedModeBtn').classList.add('active');
+            document.getElementById('simpleModeBtn').classList.remove('active');
+            fileInput.multiple = false;
+        });
+
+        // Обработка загрузки файлов
+        uploadLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            fileInput.click();
+        });
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--green-btn)';
+            uploadZone.style.backgroundColor = 'rgba(93, 200, 98, 0.1)';
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = 'var(--border-dash)';
+            uploadZone.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--border-dash)';
+            uploadZone.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFiles(files);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Обработка файлов
+        async function handleFiles(files) {
+            if (files.length === 0) return;
+
+            if (currentMode === 'advanced' && files.length === 1) {
+                // Режим просмотра метаданных
+                await showMetadataViewer(files[0]);
+            } else {
+                // Быстрая очистка
+                await quickCleanFiles(files);
+            }
+        }
+
+        // Быстрая очистка файлов
+        async function quickCleanFiles(files) {
+            // Проверка наличия библиотеки heic2any
+            if (typeof heic2any === 'undefined') {
+                alert('⚠️ Библиотека конвертации HEIC не загружена. Перезагрузите страницу или используйте другой браузер.');
+                return;
+            }
+
+            // Показать секцию обработки
+            processingSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            uploadZone.style.display = 'none';
+            document.querySelector('.mode-switch').style.display = 'none';
+
+            const totalCount = files.length;
+            document.getElementById('totalCount').textContent = totalCount;
+            document.getElementById('processedCount').textContent = '0';
+
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = '0%';
+
+            // Обработка файлов
+            const filesArray = Array.from(files);
+            processedResults = [];
+
+            for (let i = 0; i < filesArray.length; i++) {
+                try {
+                    const file = filesArray[i];
+                    
+                    if (file.name.toLowerCase().match(/\.(heic|heif)$/)) {
+                        console.log(`Конвертация HEIC файла: ${file.name}`);
+                    }
+                    
+                    const result = await exifRemover.processFile(file);
+                    processedResults.push(result);
+                    
+                    const progress = ((i + 1) / totalCount) * 100;
+                    progressFill.style.width = progress + '%';
+                    document.getElementById('processedCount').textContent = (i + 1);
+
+                    if (db.isAuthenticated()) {
+                        const user = db.getCurrentUser();
+                        db.addToHistory(user.id, {
+                            fileName: result.originalName,
+                            fileSize: result.originalSize,
+                            fileType: file.type || 'image/unknown',
+                            metadataRemoved: result.metadataRemoved
+                        });
+                        db.updateStatsAfterCleaning(user.id, result.originalSize);
+                    }
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    processedResults.push({
+                        success: false,
+                        originalName: filesArray[i].name,
+                        error: error.message
+                    });
+                }
+            }
+
+            showResults();
+        }
+
+        // Показать просмотр метаданных
+        async function showMetadataViewer(file) {
+            currentFile = file;
+            
+            document.getElementById('currentFileNameMain').textContent = file.name;
+            document.getElementById('currentFileSizeMain').textContent = formatFileSize(file.size);
+            
+            try {
+                currentMetadata = await exifReader.readMetadata(file);
+                
+                if (!currentMetadata.hasMetadata || Object.values(currentMetadata.categories).every(cat => cat.length === 0)) {
+                    alert('⚠️ В этом файле не обнаружено метаданных EXIF.\n\nИспользуйте режим "Быстрая очистка" для обработки файла.');
+                    return;
+                }
+                
+                displayMetadata();
+                
+                uploadZone.style.display = 'none';
+                document.querySelector('.mode-switch').style.display = 'none';
+                metadataViewer.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Ошибка чтения метаданных:', error);
+                alert('Ошибка чтения метаданных: ' + error.message);
+            }
+        }
+
+        // Отображение метаданных
+        function displayMetadata() {
+            const categoriesContainer = document.getElementById('metadataCategoriesMain');
+            const listContainer = document.getElementById('metadataListMain');
+            
+            categoriesContainer.innerHTML = '';
+            listContainer.innerHTML = '';
+            
+            const categories = exifReader.getCategoriesWithData(currentMetadata);
+            
+            if (categories.length === 0) {
+                listContainer.innerHTML = '<p class="empty-state">Метаданные не найдены</p>';
+                return;
+            }
+            
+            categories.forEach(category => {
+                const categoryBtn = document.createElement('button');
+                categoryBtn.className = 'metadata-category-btn';
+                categoryBtn.innerHTML = `
+                    <span>${category.label}</span>
+                    <span class="category-count">${category.count}</span>
+                `;
+                categoriesContainer.appendChild(categoryBtn);
+            });
+            
+            displayAllMetadata();
+            selectCriticalMetadata();
+        }
+
+        // Отображение всех метаданных
+        function displayAllMetadata() {
+            const listContainer = document.getElementById('metadataListMain');
+            listContainer.innerHTML = '';
+            
+            Object.keys(currentMetadata.categories).forEach(categoryName => {
+                const items = currentMetadata.categories[categoryName];
+                
+                if (items.length > 0) {
+                    const categoryHeader = document.createElement('div');
+                    categoryHeader.className = 'metadata-category-header';
+                    categoryHeader.textContent = getCategoryLabel(categoryName);
+                    listContainer.appendChild(categoryHeader);
+                    
+                    items.forEach((item, index) => {
+                        const itemId = `${categoryName}-${index}`;
+                        const itemEl = createMetadataItem(item, itemId);
+                        listContainer.appendChild(itemEl);
+                    });
+                }
+            });
+            
+            updateSelectedCount();
+        }
+
+        // Создание элемента метаданных
+        function createMetadataItem(item, id) {
+            const div = document.createElement('div');
+            div.className = 'metadata-item';
+            
+            const isSelected = selectedMetadata.has(id);
+            const criticalClass = item.critical ? 'critical' : '';
+            
+            div.innerHTML = `
+                <label class="metadata-checkbox">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleMetadata('${id}')">
+                    <div class="metadata-item-content ${criticalClass}">
+                        <div class="metadata-item-header">
+                            <span class="metadata-key">${item.key}</span>
+                            <span class="metadata-tag">${item.tag}</span>
+                            ${item.critical ? '<span class="badge-critical">Важно!</span>' : ''}
+                        </div>
+                        <div class="metadata-value">${item.value}</div>
+                    </div>
+                </label>
+            `;
+            
+            return div;
+        }
+
+        function getCategoryLabel(categoryName) {
+            const labels = {
+                'location': '📍 Геолокация',
+                'camera': '📷 Камера',
+                'datetime': '🕐 Дата и время',
+                'technical': '⚙️ Технические параметры',
+                'other': '📝 Прочее'
+            };
+            return labels[categoryName] || categoryName;
+        }
+
+        // Переключение метаданных
+        function toggleMetadata(id) {
+            if (selectedMetadata.has(id)) {
+                selectedMetadata.delete(id);
+            } else {
+                selectedMetadata.add(id);
+            }
+            updateSelectedCount();
+        }
+
+        // Выбрать критичные метаданные
+        function selectCriticalMetadata() {
+            selectedMetadata.clear();
+            
+            Object.keys(currentMetadata.categories).forEach(categoryName => {
+                currentMetadata.categories[categoryName].forEach((item, index) => {
+                    if (item.critical) {
+                        selectedMetadata.add(`${categoryName}-${index}`);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.metadata-item input[type="checkbox"]').forEach(checkbox => {
+                const id = checkbox.getAttribute('onchange').match(/'([^']+)'/)[1];
+                checkbox.checked = selectedMetadata.has(id);
+            });
+            
+            updateSelectedCount();
+        }
+
+        // Выбрать все / Снять все
+        document.getElementById('selectAllBtnMain').addEventListener('click', () => {
+            selectedMetadata.clear();
+            
+            Object.keys(currentMetadata.categories).forEach(categoryName => {
+                currentMetadata.categories[categoryName].forEach((item, index) => {
+                    selectedMetadata.add(`${categoryName}-${index}`);
+                });
+            });
+            
+            document.querySelectorAll('.metadata-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            updateSelectedCount();
+        });
+
+        document.getElementById('deselectAllBtnMain').addEventListener('click', () => {
+            selectedMetadata.clear();
+            
+            document.querySelectorAll('.metadata-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            updateSelectedCount();
+        });
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCountMain').textContent = selectedMetadata.size;
+        }
+
+        // Очистить и скачать
+        document.getElementById('cleanBtnMain').addEventListener('click', async () => {
+            if (selectedMetadata.size === 0) {
+                alert('Выберите хотя бы один элемент для удаления');
+                return;
+            }
+            
+            try {
+                // Определяем выбранные категории
+                const selectedCategoriesSet = new Set();
+                selectedMetadata.forEach(id => {
+                    const [category] = id.split('-');
+                    selectedCategoriesSet.add(category);
+                });
+                
+                const selectedCategories = Array.from(selectedCategoriesSet);
+                
+                // Используем piexifjs для выборочного удаления
+                const result = await selectiveRemover.removeSelectedMetadata(currentFile, selectedCategories);
+                
+                if (result.success) {
+                    selectiveRemover.downloadFile(result.blob, result.cleanFileName);
+                    
+                    // Показываем информацию об удалённых категориях
+                    const categoryNames = {
+                        'location': 'GPS данные',
+                        'camera': 'Информация о камере',
+                        'datetime': 'Дата и время',
+                        'technical': 'Технические параметры',
+                        'other': 'Прочие данные'
+                    };
+                    
+                    const removedText = selectedCategories.map(cat => categoryNames[cat]).join(', ');
+                    alert(`✅ Удалены метаданные: ${removedText}\n\nФайл загружен!`);
+                }
+                
+                backToUpload();
+                
+            } catch (error) {
+                console.error('Ошибка очистки:', error);
+                alert('Ошибка очистки: ' + error.message + '\n\nПопробуйте режим "Быстрая очистка".');
+            }
+        });
+
+        // Назад к загрузке
+        function backToUpload() {
+            currentFile = null;
+            currentMetadata = null;
+            selectedMetadata.clear();
+            
+            metadataViewer.style.display = 'none';
+            uploadZone.style.display = 'flex';
+            document.querySelector('.mode-switch').style.display = 'flex';
+            
+            fileInput.value = '';
+        }
+
+        // Показать результаты (быстрая очистка)
+        function showResults() {
+            processingSection.style.display = 'none';
+            resultsSection.style.display = 'block';
+
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+
+            processedResults.forEach((result, index) => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+
+                if (result.success) {
+                    const sizeSaved = result.originalSize - result.cleanSize;
+                    const percentSaved = ((sizeSaved / result.originalSize) * 100).toFixed(1);
+
+                    resultItem.innerHTML = `
+                        <div class="result-icon success">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="result-info">
+                            <div class="result-filename">${result.originalName}</div>
+                            <div class="result-details">
+                                ${result.converted ? '<span class="badge-converted">Конвертирован в JPEG</span>' : ''}
+                                <span class="result-size">${formatFileSize(result.originalSize)} → ${formatFileSize(result.cleanSize)}</span>
+                                <span class="result-saved">Сохранено ${percentSaved}%</span>
+                            </div>
+                            <div class="result-metadata">
+                                ${result.metadataRemoved.map(meta => `<span class="metadata-badge">${meta}</span>`).join('')}
+                            </div>
+                        </div>
+                        <button class="btn-download-single" onclick="downloadSingle(${index})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </button>
+                    `;
+                } else {
+                    resultItem.innerHTML = `
+                        <div class="result-icon error">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </div>
+                        <div class="result-info">
+                            <div class="result-filename">${result.originalName}</div>
+                            <div class="result-error">${result.error}</div>
+                        </div>
+                    `;
+                }
+
+                resultsList.appendChild(resultItem);
+            });
+
+            fileInput.value = '';
+        }
+
+        // Скачать один файл
+        function downloadSingle(index) {
+            const result = processedResults[index];
+            if (result.success) {
+                exifRemover.downloadFile(result.blob, result.cleanFileName);
+            }
+        }
+
+        // Скачать все файлы как ZIP
+        document.getElementById('downloadAllBtn').addEventListener('click', async () => {
+            try {
+                await exifRemover.downloadAsZip(processedResults.filter(r => r.success));
+            } catch (error) {
+                alert('Ошибка создания ZIP архива: ' + error.message);
+            }
+        });
+
+        // Очистить результаты
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            resultsSection.style.display = 'none';
+            uploadZone.style.display = 'flex';
+            document.querySelector('.mode-switch').style.display = 'flex';
+            processedResults = [];
+        });
+
+        // Форматирование размера файла
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Глобальные функции
+        window.downloadSingle = downloadSingle;
+        window.toggleMetadata = toggleMetadata;
+        window.backToUpload = backToUpload;
+    </script>
+</body>
+</html>
+</body>
+</html>
