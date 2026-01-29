@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - DriveClean</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- HEIC to JPEG converter -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <!-- JSZip for multiple files download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="card">
+            <header class="header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#2E8BC0;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#5DC862;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M50 10 L20 25 L20 50 Q20 75 50 90 Q80 75 80 50 L80 25 Z" fill="url(#shieldGradient)" opacity="0.9"/>
+                            <ellipse cx="35" cy="40" rx="8" ry="6" fill="white" opacity="0.9"/>
+                            <ellipse cx="42" cy="38" rx="7" ry="7" fill="white" opacity="0.9"/>
+                            <ellipse cx="48" cy="40" rx="6" ry="5" fill="white" opacity="0.9"/>
+                            <rect x="38" y="42" width="18" height="14" rx="2" fill="white" stroke="#2E8BC0" stroke-width="1.5"/>
+                            <circle cx="44" cy="49" r="4" fill="none" stroke="#2E8BC0" stroke-width="1.5"/>
+                            <line x1="44" y1="49" x2="47" y2="52" stroke="#2E8BC0" stroke-width="1.5"/>
+                            <line x1="40" y1="44" x2="52" y2="44" stroke="#2E8BC0" stroke-width="1"/>
+                            <line x1="58" y1="38" x2="68" y2="48" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                            <path d="M67 48 L65 54 Q63 58 60 58 Q57 58 55 54 L53 48" fill="#5DC862" stroke="white" stroke-width="1"/>
+                            <circle cx="46" cy="62" r="1.5" fill="#5DC862" opacity="0.8"/>
+                            <circle cx="52" cy="65" r="1" fill="#5DC862" opacity="0.6"/>
+                            <circle cx="42" cy="66" r="1" fill="#2E8BC0" opacity="0.7"/>
+                            <circle cx="48" cy="68" r="1.2" fill="#5DC862" opacity="0.7"/>
+                        </svg>
+                    </div>
+                    <span class="logo-text">DriveClean</span>
+                </div>
+                <nav class="nav-menu">
+                    <a href="dashboard.html" class="active">Личный кабинет</a>
+                    <a href="how-it-works.html">Как это работает?</a>
+                    <a href="social.html">Социальные сети</a>
+                </nav>
+                <button class="btn-login" id="logoutBtn">Выход</button>
+            </header>
+            <main class="content content-page">
+                <div class="dashboard-header">
+                    <div>
+                        <h1 class="page-title" style="text-align: left; margin-bottom: 10px;">Добро пожаловать, <span id="userName"></span>!</h1>
+                        <p class="dashboard-subtitle">Управляйте своими файлами и просматривайте статистику</p>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalFiles">0</div>
+                            <div class="stat-label">Всего очищено файлов</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="todayFiles">0</div>
+                            <div class="stat-label">Очищено сегодня</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalSize">0 MB</div>
+                            <div class="stat-label">Общий размер файлов</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="8.5" cy="7" r="4"></circle>
+                                <polyline points="17 11 19 13 23 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="memberSince">-</div>
+                            <div class="stat-label">Дата регистрации</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h2 class="section-title">Очистка файлов</h2>
+                    <div class="upload-zone-dashboard">
+                        <div class="icon-broom">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 4L12 12"></path>
+                                <path d="M10 14L4 20C4 20 6 22 8 22C10 22 12 20 12 20L18 14"></path>
+                                <path d="M16 8L16.01 8"></path>
+                                <path d="M13 11L13.01 11"></path>
+                            </svg>
+                        </div>
+                        <p class="upload-text">
+                            Перетащите сюда файлы или <a href="#" class="upload-link-dashboard">выберите на вашем компьютере</a>
+                        </p>
+                        <p class="upload-formats">JPG, PNG, WEBP, HEIC, HEIF, BMP, GIF</p>
+                        <input type="file" id="fileInputDashboard" multiple accept="image/*,.heic,.heif" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h2 class="section-title">История очистки</h2>
+                    <div id="historyContainer" class="history-container">
+                        <p class="empty-state">История пуста. Очистите первый файл!</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <div class="footer-timestamp">
+            © 2025 DriveClean
+        </div>
+    </div>
+
+    <script src="database.js"></script>
+    <script src="exif-remover.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
